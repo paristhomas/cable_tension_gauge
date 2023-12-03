@@ -5,13 +5,14 @@ from matplotlib.widgets import Slider, RangeSlider
 
 # model
 # all dimentions mm, Newtons and degreese
-r = 10
+# all dimentions mm, Newtons and degreese
+r = 7.5
 x = {"a": [0, 0],
-     "b": [0, 25.6],
+     "b": [4.44, 25.6],
      "c": [0, 190],
-     "e": [109, 150]}
+     "e": [109, 150.62]}
 theta = [3.3, 15.4]
-T = [2460, 312]
+T = [2460, 252]
 
 
 def xd(index):
@@ -136,21 +137,20 @@ def update(var):
         annotations[i].set_position(x[point])
     e0 = e_0()
     k = spring_constant(0, e0)
-    solution.set_text(f'e_0 = {e_0()} \n'
-                      f'K = {spring_constant(0, e_0())}\n'
-                      f'Extension range > {- e_0() + np.linalg.norm(vec("c", "e"))}')
+    solution.set_text(f'e_0 = {round(e_0(),2)} \n'
+                      f'K = {round(spring_constant(0, e_0()),3)}\n'
+                      f'Extension range > {round(- e_0() + np.linalg.norm(vec("c", "e")), 2)}')
 
 for slider in sliders:
     slider.on_changed(update)
 
-# plot linearity of result maybe
 
 e0 = e_0()
 k = spring_constant(0, e0)
 print(e0, k)
 k = spring_constant(1, e0)
 print(e0, k)
-# Moment_about_a(0, k, e0)
+print(Moment_about_a(0, k, e0))
 update(0)
 plt.show()
 
