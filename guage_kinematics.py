@@ -6,7 +6,7 @@ from scipy.optimize import bisect
 
 
 class TensionGaugeMaths:
-    def __init__(self):
+    def __init__(self, wire_diameter=3):
         # positions (mm), x_pos, y_pos, radius (if aplic
         self.r_a = 12.1/2
         self.r_b = 16.5/2
@@ -21,7 +21,7 @@ class TensionGaugeMaths:
         self.spring_constant = 0.95 # N/mm
         self.e_0 = 39.1  #mm
         # wire paramiters
-        self.wire_diameter = 3  # mm
+        self.wire_diameter = wire_diameter  # mm
         # Scale properties
         self.scale_thetas = [16, 0]
         self.scale_numbers = [10, 40]
@@ -56,11 +56,13 @@ class TensionGaugeMaths:
 
 class TensionGuage:
     def __init__(self):
-        self.maths = TensionGaugeMaths()
+        self.maths_3 = TensionGaugeMaths(3)
+        self.maths_2_5 = TensionGaugeMaths(2.5)
+        self.maths_4 = TensionGaugeMaths(4)
 
     def plot_theta_vs_tension(self):
         tensions = np.linspace(300, 3600, 100)  # newtons
-        thetas = [self.maths.tension_2_theta(tension) for tension in tensions]
+        thetas = [self.maths_3.tension_2_theta(tension) for tension in tensions]
         print(f"scale: {tensions[50]} \n Angle: {thetas[50]}")
         plt.plot(tensions, thetas)
         plt.xlabel("Wire tension (N)")
@@ -70,32 +72,44 @@ class TensionGuage:
 
     def plot_theta_vs_tension_loose_scales(self):
         tensions = np.linspace(300, 3600, 100)  # newtons
-        tensions_scale_2_5 = Conversions.newtons_to_scale_2_5mm(tensions)
-        tensions_scale_3 = Conversions.newtons_to_scale_3mm(tensions)
-        tensions_scale_4 = Conversions.newtons_to_scale_4mm(tensions)
+        tensions_scale_2_5 = ConversionsLooseGauge.newtons_to_scale_2_5mm(tensions)
+        tensions_scale_3 = ConversionsLooseGauge.newtons_to_scale_3mm(tensions)
+        tensions_scale_4 = ConversionsLooseGauge.newtons_to_scale_4mm(tensions)
         # 2.5mm
-        self.maths.wire_diameter = 2.5
-        thetas_2_5 = [self.maths.tension_2_theta(tension) for tension in tensions]
+        thetas_2_5 = [self.maths_2_5.tension_2_theta(tension) for tension in tensions]
         # 3mm
-        self.maths.wire_diameter = 3
-        thetas_3 = [self.maths.tension_2_theta(tension) for tension in tensions]
+        thetas_3 = [self.maths_3.tension_2_theta(tension) for tension in tensions]
         # 4mm
-        self.maths.wire_diameter = 4
-        thetas_4 = [self.maths.tension_2_theta(tension) for tension in tensions]
-        self.maths.wire_diameter = 3
+        thetas_4 = [self.maths_4.tension_2_theta(tension) for tension in tensions]
 
         plt.plot(tensions_scale_2_5, thetas_2_5, label="2.5mm")
         plt.plot(tensions_scale_3, thetas_3, label="3mm")
         plt.plot(tensions_scale_4, thetas_4, label="4mm")
-        plt.plot(self.maths.scale_numbers, self.maths.scale_thetas, label="Tension gauge scale")
+        plt.plot(self.maths_3.scale_numbers, self.maths_3.scale_thetas, label="Tension gauge scale")
         plt.xlabel("Wire tension (scale)")
         plt.ylabel("Theta (deg)")
         plt.legend()
         plt.grid(True)
         plt.show()
 
+    def numbers_to_tensions(self, input_numbers=[10, 15, 20, 25, 30, 35, 40]):
+        output_tensions = []
+        for maths in [self.maths_2_5, self.maths_3, self.maths_4]:
+            input_thetas = np.interp(input_numbers, maths.scale_numbers, maths.scale_thetas)
+            tensions = np.linspace(300, 3600, 100)
+            thetas = np.array([maths.tension_2_theta(tension) for tension in tensions])
+            output_tension = np.interp(input_thetas, thetas[::-1], tensions[::-1])/9.81
+            output_tensions.append(output_tension)
+            plt.plot(input_numbers, output_tension)
+        print(output_tensions)
+        plt.xlabel("Tension Gauge reading")
+        plt.ylabel("Tension (Kg)")
+        plt.grid(True)
+        plt.legend(["2.5mm", "3mm", "4mm"])
+        plt.show()
+        return output_tensions
 
-class Conversions:
+class ConversionsLooseGauge:
     @staticmethod
     def newtons_to_scale_3mm(tensions):
         # 3mm cable mapping
@@ -113,7 +127,7 @@ class Conversions:
         return np.interp(tensions, tension_n, scale)
 
     @staticmethod
-    def newtons_to_scale_4mm( tensions):
+    def newtons_to_scale_4mm(tensions):
         # 4mm cable mapping
         scale = np.array([21, 24, 26, 28, 30, 32, 35, 38, 40])
         tension_kgs = np.array([70, 90, 115, 140, 160, 180, 225, 280, 360])
@@ -122,9 +136,9 @@ class Conversions:
 
 def main():
     tension_guage = TensionGuage()
-    #tension_guage.plot_theta_vs_tension()
+    tension_guage.plot_theta_vs_tension()
     tension_guage.plot_theta_vs_tension_loose_scales()
-
+    tension_guage.numbers_to_tensions()
 
 if __name__ == "__main__":
     main()
